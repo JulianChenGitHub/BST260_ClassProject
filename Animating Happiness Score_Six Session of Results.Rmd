@@ -1,0 +1,571 @@
+---
+title: "World Happiness Report-Sixth Session of Result-Animatting Happiness Score"
+date: "December 01 2019"
+output: 
+  html_document:
+    code_folding: hide
+---
+
+
+```{r config, include=FALSE}
+knitr::opts_chunk$set(message=FALSE, warning=FALSE, comment=NA, echo=T)
+``` 
+
+
+Loading libraries 
+```{r}
+library(Cairo) 
+library(dslabs)
+library(shiny)
+library(dslabs)
+library(dplyr)
+library(ggplot2)
+webshot::install_phantomjs()
+```
+
+Loading data
+```{r}
+gapminder<-read.csv("AnimatingHScoredata.csv",header=T)
+```
+
+This session aims to show the transformation and distribution of happiness score and factors in these five consecutive years. Shiny app is used to formulate the consecutive change. For example, the first one is to compare the continuous trnasformation between Happiness socre and economy through these five years. Each Shiny app is written as two parts for each factor. The first one is to compare the change 
+
+**Happiness Score and GDP per Capita**
+```{r}
+ui = fluidPage(
+
+  titlePanel("GDP per Capita Analysis"),
+  
+  # Create an app with 2 tabs
+  tabsetPanel(
+
+    # First tab: life expactancy
+    # Include dropdown menu of diseases to choose from 
+    tabPanel("GDP per capita over time",
+             sidebarLayout(
+               sidebarPanel(
+                 # Dropdown menu that allows the user to choose a disease
+                 selectInput(inputId = "country", label = "Select a country",
+                             choices = as.list(levels(gapminder$country)))
+               ),##sidebarpanel
+               
+               mainPanel(plotOutput("scatterPlot1"))
+             )##Sidebarlayout
+             ),###tabpanel
+    
+    tabPanel("GDP per Capita and Happiness Score",
+             sidebarLayout(
+                
+               sidebarPanel(
+      
+    fluidRow(width=12,
+        column(width=12,sliderInput("year", "Year:", min = 2014, max = 2018, value = 2014, step = 1, sep = "", ticks = FALSE, animate = TRUE)),
+    
+        column(width=12, h4("Points near click"), verbatimTextOutput("click_info"))
+             )##fluidRow
+    ),###sidebarPanel
+    
+      mainPanel(
+    fluidRow(width=12, 
+        column(width=12, plotOutput("scatterPlot2", height=300, 
+                             click="scatterPlot2_click"
+          
+                             ))
+        )
+      )###mainpanel
+      )##sidebarLayout       
+    )##tabPanel
+    
+
+  )##TabsetPanel
+)##Fluidpage
+
+server = function(input, output) {
+
+    output$scatterPlot1 = renderPlot({
+                        #the_country<-input$country
+                      USA<-subset(gapminder,country=="United States")
+                        gapminder%>%filter(country %in% input$country) %>% ggplot() +
+                                              geom_line(aes(x = year, y = Economy)) +
+                                 geom_line(data = USA, mapping=aes(year,Economy),color="red")+
+                                                xlab("Year") +
+                                                ylab("GDP per Capita") +
+                          ggtitle(sprintf("GDP per capita comparison with United States")) +
+                            theme_bw()
+                           #scale_x_continuous(limit=c(1960, 2020))
+                        })
+    
+    output$scatterPlot2 = renderPlot({
+           gapminder %>% filter(year %in% input$year) %>%
+             ggplot(aes(HScore, Economy, color = continent)) +
+             geom_point(alpha = 0.5) +
+             xlab("Happiness Score") +
+             ylab("GDP per capita") +
+        
+             #scale_x_continuous(breaks = seq(0, 9), limits = c(1, 8)) +
+           #scale_y_continuous(breaks = seq(30, 85, 5), limits = c(30, 85)) +
+
+             #scale_color_discrete(name = "Continent") +
+             #scale_size_continuous(name = "Population in millions") +
+
+           ggtitle(sprintf("GDP per Capita vs. Happiness Score in %d", input$year)) +
+             theme_bw()})
+    
+    output$click_info <- renderPrint({
+    nearPoints(gapminder,input$scatterPlot2_click, threshold = 10, maxpoints = 1, addDist = TRUE)
+  })
+
+}
+
+shinyApp(ui = ui, server = server)
+```
+
+**Happiness Score and Social Support**
+```{r}
+ui = fluidPage(
+
+  titlePanel("Social Support Analysis"),
+  
+  # Create an app with 2 tabs
+  tabsetPanel(
+
+    # First tab: life expactancy
+    # Include dropdown menu of diseases to choose from 
+    tabPanel("Social support over time",
+             sidebarLayout(
+               sidebarPanel(
+                 # Dropdown menu that allows the user to choose a disease
+                 selectInput(inputId = "country", label = "Select a country",
+                             choices = as.list(levels(gapminder$country)))
+               ),##sidebarpanel
+               
+               mainPanel(plotOutput("scatterPlot1"))
+             )##Sidebarlayout
+             ),###tabpanel
+    
+    tabPanel("Social Support and Happiness Score",
+             sidebarLayout(
+                
+               sidebarPanel(
+      
+    fluidRow(width=12,
+        column(width=12,sliderInput("year", "Year:", min = 2014, max = 2018, value = 2014, step = 1, sep = "", ticks = FALSE, animate = TRUE)),
+    
+        column(width=12, h4("Points near click"), verbatimTextOutput("click_info"))
+             )##fluidRow
+    ),###sidebarPanel
+    
+      mainPanel(
+    fluidRow(width=12, 
+        column(width=12, plotOutput("scatterPlot2", height=300, 
+                             click="scatterPlot2_click"
+          
+                             ))
+        )
+      )###mainpanel
+      )##sidebarLayout       
+    )##tabPanel
+    
+
+  )##TabsetPanel
+)##Fluidpage
+
+server = function(input, output) {
+
+    output$scatterPlot1 = renderPlot({
+                        #the_country<-input$country
+                      USA<-subset(gapminder,country=="United States")
+                        gapminder%>%filter(country %in% input$country) %>% ggplot() +
+                                              geom_line(aes(x = year, y = Family)) +
+                                 geom_line(data = USA, mapping=aes(year,Family),color="red")+
+                                                xlab("Year") +
+                                                ylab("Social Support") +
+                          ggtitle(sprintf("Social Support comparison with United States")) +
+                            theme_bw()
+                           #scale_x_continuous(limit=c(1960, 2020))
+                        })
+    
+    output$scatterPlot2 = renderPlot({
+           gapminder %>% filter(year %in% input$year) %>%
+             ggplot(aes(HScore, Family, color = continent)) +
+             geom_point(alpha = 0.5) +
+             xlab("Happiness Score") +
+             ylab("Social Support") +
+        
+             #scale_x_continuous(breaks = seq(0, 9), limits = c(1, 8)) +
+           #scale_y_continuous(breaks = seq(30, 85, 5), limits = c(30, 85)) +
+
+             #scale_color_discrete(name = "Continent") +
+             #scale_size_continuous(name = "Population in millions") +
+
+           ggtitle(sprintf("Social Support vs. Happiness Score in %d", input$year)) +
+             theme_bw()})
+    
+    output$click_info <- renderPrint({
+    nearPoints(gapminder,input$scatterPlot2_click, threshold = 10, maxpoints = 1, addDist = TRUE)
+  })
+
+}
+
+shinyApp(ui = ui, server = server)
+```
+
+**Happiness Score and Life Expectancy**
+```{r}
+ui = fluidPage(
+
+  titlePanel("Life Expectancy Analysis"),
+  
+  # Create an app with 2 tabs
+  tabsetPanel(
+
+    # First tab: life expactancy
+    # Include dropdown menu of diseases to choose from 
+    tabPanel("Life expectancy over time",
+             sidebarLayout(
+               sidebarPanel(
+                 # Dropdown menu that allows the user to choose a disease
+                 selectInput(inputId = "country", label = "Select a country",
+                             choices = as.list(levels(gapminder$country)))
+               ),##sidebarpanel
+               
+               mainPanel(plotOutput("scatterPlot1"))
+             )##Sidebarlayout
+             ),###tabpanel
+    
+    tabPanel("Life Expectancy and Happiness Score",
+             sidebarLayout(
+                
+               sidebarPanel(
+      
+    fluidRow(width=12,
+        column(width=12,sliderInput("year", "Year:", min = 2014, max = 2018, value = 2014, step = 1, sep = "", ticks = FALSE, animate = TRUE)),
+    
+        column(width=12, h4("Points near click"), verbatimTextOutput("click_info"))
+             )##fluidRow
+    ),###sidebarPanel
+    
+      mainPanel(
+    fluidRow(width=12, 
+        column(width=12, plotOutput("scatterPlot2", height=300, 
+                             click="scatterPlot2_click"
+          
+                             ))
+        )
+      )###mainpanel
+      )##sidebarLayout       
+    )##tabPanel
+    
+
+  )##TabsetPanel
+)##Fluidpage
+
+server = function(input, output) {
+
+    output$scatterPlot1 = renderPlot({
+                        #the_country<-input$country
+                      USA<-subset(gapminder,country=="United States")
+                        gapminder%>%filter(country %in% input$country) %>% ggplot() +
+                                              geom_line(aes(x = year, y = life_expectancy)) +
+                                 geom_line(data = USA, mapping=aes(year,life_expectancy),color="red")+
+                                                xlab("Year") +
+                                                ylab("Life expectancy") +
+                          ggtitle(sprintf("Life expectancy comparison with United States")) +
+                            theme_bw()
+                           #scale_x_continuous(limit=c(1960, 2020))
+                        })
+    
+    output$scatterPlot2 = renderPlot({
+           gapminder %>% filter(year %in% input$year) %>%
+             ggplot(aes(HScore, life_expectancy, color = continent)) +
+             geom_point(alpha = 0.5) +
+             xlab("Happiness Score") +
+             ylab("Life Expectancy") +
+        
+             #scale_x_continuous(breaks = seq(0, 9), limits = c(1, 8)) +
+           #scale_y_continuous(breaks = seq(30, 85, 5), limits = c(30, 85)) +
+
+             #scale_color_discrete(name = "Continent") +
+             #scale_size_continuous(name = "Population in millions") +
+
+           ggtitle(sprintf("Life expectancy vs. Happiness Score in %d", input$year)) +
+             theme_bw()})
+    
+    output$click_info <- renderPrint({
+    nearPoints(gapminder,input$scatterPlot2_click, threshold = 10, maxpoints = 1, addDist = TRUE)
+  })
+
+}
+
+shinyApp(ui = ui, server = server)
+```
+
+**Happiness Score and Freedom**
+```{r}
+ui = fluidPage(
+
+  titlePanel("Freedom Analysis"),
+  
+  # Create an app with 2 tabs
+  tabsetPanel(
+
+    # First tab: life expactancy
+    # Include dropdown menu of diseases to choose from 
+    tabPanel("Freedom over time",
+             sidebarLayout(
+               sidebarPanel(
+                 # Dropdown menu that allows the user to choose a disease
+                 selectInput(inputId = "country", label = "Select a country",
+                             choices = as.list(levels(gapminder$country)))
+               ),##sidebarpanel
+               
+               mainPanel(plotOutput("scatterPlot1"))
+             )##Sidebarlayout
+             ),###tabpanel
+    
+    tabPanel("Freedom and Happiness Score",
+             sidebarLayout(
+                
+               sidebarPanel(
+      
+    fluidRow(width=12,
+        column(width=12,sliderInput("year", "Year:", min = 2014, max = 2018, value = 2014, step = 1, sep = "", ticks = FALSE, animate = TRUE)),
+    
+        column(width=12, h4("Points near click"), verbatimTextOutput("click_info"))
+             )##fluidRow
+    ),###sidebarPanel
+    
+      mainPanel(
+    fluidRow(width=12, 
+        column(width=12, plotOutput("scatterPlot2", height=300, 
+                             click="scatterPlot2_click"
+          
+                             ))
+        )
+      )###mainpanel
+      )##sidebarLayout       
+    )##tabPanel
+    
+
+  )##TabsetPanel
+)##Fluidpage
+
+server = function(input, output) {
+
+    output$scatterPlot1 = renderPlot({
+                        #the_country<-input$country
+                      USA<-subset(gapminder,country=="United States")
+                        gapminder%>%filter(country %in% input$country) %>% ggplot() +
+                                              geom_line(aes(x = year, y = Freedom)) +
+                                 geom_line(data = USA, mapping=aes(year,Freedom),color="red")+
+                                                xlab("Year") +
+                                                ylab("Freedom") +
+                          ggtitle(sprintf("Life expectancy comparison with United States")) +
+                            theme_bw()
+                           #scale_x_continuous(limit=c(1960, 2020))
+                        })
+    
+    output$scatterPlot2 = renderPlot({
+           gapminder %>% filter(year %in% input$year) %>%
+             ggplot(aes(HScore, Freedom, color = continent)) +
+             geom_point(alpha = 0.5) +
+             xlab("Happiness Score") +
+             ylab("Freedom") +
+        
+             #scale_x_continuous(breaks = seq(0, 9), limits = c(1, 8)) +
+           #scale_y_continuous(breaks = seq(30, 85, 5), limits = c(30, 85)) +
+
+             #scale_color_discrete(name = "Continent") +
+             #scale_size_continuous(name = "Population in millions") +
+
+           ggtitle(sprintf("Freedom vs. Happiness Score in %d", input$year)) +
+             theme_bw()})
+    
+    output$click_info <- renderPrint({
+    nearPoints(gapminder,input$scatterPlot2_click, threshold = 10, maxpoints = 1, addDist = TRUE)
+  })
+
+}
+
+shinyApp(ui = ui, server = server)
+```
+
+**Happiness Score and Generosity**
+```{r}
+ui = fluidPage(
+
+  titlePanel("Generosity Analysis"),
+  
+  # Create an app with 2 tabs
+  tabsetPanel(
+
+    # First tab: life expactancy
+    # Include dropdown menu of diseases to choose from 
+    tabPanel("Generosity over time",
+             sidebarLayout(
+               sidebarPanel(
+                 # Dropdown menu that allows the user to choose a disease
+                 selectInput(inputId = "country", label = "Select a country",
+                             choices = as.list(levels(gapminder$country)))
+               ),##sidebarpanel
+               
+               mainPanel(plotOutput("scatterPlot1"))
+             )##Sidebarlayout
+             ),###tabpanel
+    
+    tabPanel("Generosity and Happiness Score",
+             sidebarLayout(
+                
+               sidebarPanel(
+      
+    fluidRow(width=12,
+        column(width=12,sliderInput("year", "Year:", min = 2014, max = 2018, value = 2014, step = 1, sep = "", ticks = FALSE, animate = TRUE)),
+    
+        column(width=12, h4("Points near click"), verbatimTextOutput("click_info"))
+             )##fluidRow
+    ),###sidebarPanel
+    
+      mainPanel(
+    fluidRow(width=12, 
+        column(width=12, plotOutput("scatterPlot2", height=300, 
+                             click="scatterPlot2_click"
+          
+                             ))
+        )
+      )###mainpanel
+      )##sidebarLayout       
+    )##tabPanel
+    
+
+  )##TabsetPanel
+)##Fluidpage
+
+server = function(input, output) {
+
+    output$scatterPlot1 = renderPlot({
+                        #the_country<-input$country
+                      USA<-subset(gapminder,country=="United States")
+                        gapminder%>%filter(country %in% input$country) %>% ggplot() +
+                                              geom_line(aes(x = year, y = Generosity)) +
+                                 geom_line(data = USA, mapping=aes(year,Generosity),color="red")+
+                                                xlab("Year") +
+                                                ylab("Generosity") +
+                          ggtitle(sprintf("Generosity comparison with United States")) +
+                            theme_bw()
+                           #scale_x_continuous(limit=c(1960, 2020))
+                        })
+    
+    output$scatterPlot2 = renderPlot({
+           gapminder %>% filter(year %in% input$year) %>%
+             ggplot(aes(HScore, Generosity, color = continent)) +
+             geom_point(alpha = 0.5) +
+             xlab("Happiness Score") +
+             ylab("Generosity") +
+        
+             #scale_x_continuous(breaks = seq(0, 9), limits = c(1, 8)) +
+           #scale_y_continuous(breaks = seq(30, 85, 5), limits = c(30, 85)) +
+
+             #scale_color_discrete(name = "Continent") +
+             #scale_size_continuous(name = "Population in millions") +
+
+           ggtitle(sprintf("Generosity vs. Happiness Score in %d", input$year)) +
+             theme_bw()})
+    
+    output$click_info <- renderPrint({
+    nearPoints(gapminder,input$scatterPlot2_click, threshold = 10, maxpoints = 1, addDist = TRUE)
+  })
+
+}
+
+shinyApp(ui = ui, server = server)
+```
+
+**Happiness Score and Trust**
+```{r}
+ui = fluidPage(
+
+  titlePanel("Trust Analysis"),
+  
+  # Create an app with 2 tabs
+  tabsetPanel(
+
+    # First tab: life expactancy
+    # Include dropdown menu of diseases to choose from 
+    tabPanel("Trust over time",
+             sidebarLayout(
+               sidebarPanel(
+                 # Dropdown menu that allows the user to choose a disease
+                 selectInput(inputId = "country", label = "Select a country",
+                             choices = as.list(levels(gapminder$country)))
+               ),##sidebarpanel
+               
+               mainPanel(plotOutput("scatterPlot1"))
+             )##Sidebarlayout
+             ),###tabpanel
+    
+    tabPanel("Trust and Happiness Score",
+             sidebarLayout(
+                
+               sidebarPanel(
+      
+    fluidRow(width=12,
+        column(width=12,sliderInput("year", "Year:", min = 2014, max = 2018, value = 2014, step = 1, sep = "", ticks = FALSE, animate = TRUE)),
+    
+        column(width=12, h4("Points near click"), verbatimTextOutput("click_info"))
+             )##fluidRow
+    ),###sidebarPanel
+    
+      mainPanel(
+    fluidRow(width=12, 
+        column(width=12, plotOutput("scatterPlot2", height=300, 
+                             click="scatterPlot2_click"
+          
+                             ))
+        )
+      )###mainpanel
+      )##sidebarLayout       
+    )##tabPanel
+    
+
+  )##TabsetPanel
+)##Fluidpage
+
+server = function(input, output) {
+
+    output$scatterPlot1 = renderPlot({
+                        #the_country<-input$country
+                      USA<-subset(gapminder,country=="United States")
+                        gapminder%>%filter(country %in% input$country) %>% ggplot() +
+                                              geom_line(aes(x = year, y = Trust)) +
+                                 geom_line(data = USA, mapping=aes(year,Generosity),color="red")+
+                                                xlab("Year") +
+                                                ylab("Trust") +
+                          ggtitle(sprintf("Trust comparison with United States")) +
+                            theme_bw()
+                           #scale_x_continuous(limit=c(1960, 2020))
+                        })
+    
+    output$scatterPlot2 = renderPlot({
+           gapminder %>% filter(year %in% input$year) %>%
+             ggplot(aes(HScore, Trust, color = continent)) +
+             geom_point(alpha = 0.5) +
+             xlab("Happiness Score") +
+             ylab("Trust") +
+        
+             #scale_x_continuous(breaks = seq(0, 9), limits = c(1, 8)) +
+           #scale_y_continuous(breaks = seq(30, 85, 5), limits = c(30, 85)) +
+
+             #scale_color_discrete(name = "Continent") +
+             #scale_size_continuous(name = "Population in millions") +
+
+           ggtitle(sprintf("Trust vs. Happiness Score in %d", input$year)) +
+             theme_bw()})
+    
+    output$click_info <- renderPrint({
+    nearPoints(gapminder,input$scatterPlot2_click, threshold = 10, maxpoints = 1, addDist = TRUE)
+  })
+
+}
+
+shinyApp(ui = ui, server = server)
+```
