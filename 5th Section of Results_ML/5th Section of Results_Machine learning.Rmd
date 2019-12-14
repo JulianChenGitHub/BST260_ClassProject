@@ -1,0 +1,113 @@
+---
+title: "World Happiness Report-Fifth Section of Results-Machine learning"
+date: "December 01 2019"
+output: 
+  html_document:
+    code_folding: hide
+---
+
+```{r config, include=FALSE}
+knitr::opts_chunk$set(message=FALSE, warning=FALSE, comment=NA, echo=T)
+```
+
+Loading Libraries and Data
+```{r}
+
+library(tidyverse)
+library(caTools)
+library(MASS)
+library(dplyr)
+happydata<-read.csv("5years.csv",header=T)
+
+set.seed(123)
+dataset <- dplyr::select(happydata,HScore,Economy,Family,Life.expectancy,Freedom,Generosity,Trust)
+
+split = sample.split(dataset$HScore, SplitRatio = 3/4)
+training_set = subset(dataset, split == TRUE)
+test_set = subset(dataset, split == FALSE)
+```
+After these thorough analyses of the previous session. We would ask how we can predict the happiness session? These session, three different machine learning stratigies are used to predict the happiness scores. The section aims to find which strategy would be the best one. 
+
+```{r}
+
+library(tidyverse)
+library(dslabs)
+library(broom)
+regressor_lm = lm(formula = HScore ~ ., data = training_set)
+```
+Test-data
+```{r}
+y_pred_lm = predict(regressor_lm, newdata = test_set)
+Pred_Actual_lm <- as.data.frame(cbind(Prediction = y_pred_lm, Actual = test_set$HScore))
+
+```
+
+Plot
+```{r}
+gg.lm <- ggplot(Pred_Actual_lm, aes(Actual, Prediction )) +
+  geom_point(color="blue",size = 3, alpha = 0.5) + theme_bw() + geom_abline(col="red", lwd=1, lty=2) +stat_smooth(method = "lm", col = "blue") +
+  labs(title = "Multiple Linear Regression", x = "Actual happiness score",
+       y = "Predicted happiness score") +
+  theme(plot.title = element_text(family = "Helvetica", face = "bold", size = (15)), 
+        axis.title = element_text(family = "Helvetica", size = (10)))
+  
+gg.lm
+```
+
+
+Neural net
+```{r}
+library(neuralnet)
+
+nn <- neuralnet(HScore ~ Economy + Family + Life.expectancy + Freedom + Generosity + Trust,
+                data=training_set,hidden=1,linear.output=TRUE)
+```
+
+
+```{r}
+predicted.nn.values <- compute(nn,test_set[,2:7])
+
+Pred_Actual_nn <- as.data.frame(cbind(Prediction = predicted.nn.values$net.result, Actual = test_set$HScore))
+
+gg.nn <- ggplot(Pred_Actual_nn, aes(Actual, V1 )) +
+    geom_point(color="blue",size = 3, alpha = 0.5) + theme_bw() + geom_abline(col="red", lwd=1, lty=2) +stat_smooth(method = "lm", col = "blue") +
+  labs(title = "Neural Net", x = "Actual happiness score",
+       y = "Predicted happiness score") +
+  theme(plot.title = element_text(family = "Helvetica", face = "bold", size = (15)), 
+      axis.title = element_text(family = "Helvetica", size = (10)))
+gg.nn
+```
+Decision Tree
+```{r}
+# Fitting Decision Tree Regression to the dataset
+library(rpart)
+regressor_dt = rpart(formula = HScore ~ .,
+                  data = dataset,
+                  control = rpart.control(minsplit = 10))
+# Predicting a new result with Decision Tree Regression
+y_pred_dt = predict(regressor_dt, newdata = test_set)
+
+Pred_Actual_dt <- as.data.frame(cbind(Prediction = y_pred_dt, Actual = test_set$HScore))
+
+
+gg.dt <- ggplot(Pred_Actual_dt, aes(Actual, Prediction )) +
+    geom_point(color="blue",size = 3, alpha = 0.5) + theme_bw() + geom_abline(col="red", lwd=1, lty=2) +stat_smooth(method = "lm", col = "blue") +
+  labs(title = "Decision Tree Regression", x = "Actual happiness score",
+       y = "Predicted happiness score") +
+  theme(plot.title = element_text(family = "Helvetica", face = "bold", size = (15)), 
+        axis.title = element_text(family = "Helvetica", size = (10)))
+gg.dt
+```
+
+
+Based on the Mean Sqaure Error and the five year data, neural net has the lowest value of MSE, which indicate that neural net could be the best one to predict happiness score. However, multiple linear regression has the very close value of MSE. In addition, the result of multiple linear regression is much more easily to be interpreted. Thus, both neural net and multiple linear regression are recommended to predict the happines score. 
+```{r}
+MSE.lm <- sum((test_set$HScore - y_pred_lm)^2)/nrow(test_set)
+MSE.nn <- sum((test_set$HScore - predicted.nn.values$net.result)^2)/nrow(test_set)
+MSE.dtr<-sum((test_set$HScore - y_pred_dt)^2)/nrow(test_set)
+
+print(paste("Mean Squared Error (Multiple Linear Regression):", MSE.lm))
+print(paste("Mean Squared Error (Neural Net):", MSE.nn))
+print(paste("Mean Squared Error (Decision Tree Regression):", MSE.dtr))
+```
+
