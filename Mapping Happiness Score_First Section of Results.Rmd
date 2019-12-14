@@ -1,0 +1,476 @@
+---
+title: "World Happiness Report-First Section of Results-Mapping Happiness Score and factors"
+date: "November 29 2019"
+output: 
+  html_document:
+    code_folding: hide
+    theme: lumen
+---
+
+```{r config, include=FALSE}
+knitr::opts_chunk$set(message=FALSE, warning=FALSE, comment=NA, echo=T)
+```
+
+
+Load liabraries
+
+```{r}
+library(ggplot2)
+library(tidyverse)
+library(dplyr)
+library(plotly)
+library(corrplot)
+library(highcharter)
+library(plot3D)
+library(countrycode)
+library(maps)
+library(caret)
+library(caTools)
+library(randomForest)
+library(e1071)
+
+```
+
+Data Preprocessing
+
+```{r}
+data15 <- read.csv("C:/Users/power/BST260/Project/world-happiness/world-happiness-new/2015.csv", stringsAsFactors = F)
+data16 <- read.csv("C:/Users/power/BST260/Project/world-happiness/world-happiness-new/2019.csv", stringsAsFactors = F)
+data17 <- read.csv("C:/Users/power/BST260/Project/world-happiness/world-happiness-new/2017.csv", stringsAsFactors = F)
+```
+
+Adding continents
+
+```{r}
+data15$continent <- NA
+data15$continent[which(data15$Region %in% c("Eastern Asia", "Southeastern Asia", "Southern Asia"))] <- "Asia"
+data15$continent[which(data15$Region %in% c("Central and Eastern Europe", "Western Europe"))] <- "Europe"
+data15$continent[which(data15$Region == "North America")] <- "North America"
+data15$continent[which(data15$Country %in% c("Canada", "Jamaica", "Honduras", "Trinidad and Tobago",
+                                             "Panama", "El Salvador","Haiti", "Peru",
+                                             "Costa Rica", "Dominican Republic", "Mexico", "United States",
+                                             "Guatemala", "Nicaragua"))] <- "North America"
+
+data15$continent[which(data15$Country %in% c("Brazil", "Chile", "Argentina", "Uruguay",
+                                             "Colombia", "Ecuador","Paraguay", "Peru",
+                                             "Bolivia", "Venezuela", "Suriname"))] <- "South America"
+
+data15$continent[which(data15$Country %in% c("United Arab Emirates", "Oman", "Qatar", "Saudi Arabia",
+                                             "Kuwait", "Bahrain","Libya", "Jordan",
+                                             "Lebanon", "Iraq", "Iran", "Yemen", "Syria",
+                                             "Turkey", "Israel", "Egypt", "Palestinian Territories"))] <- "Middle East"
+data15$continent[which(data15$Country %in% c("Mauritius", "Nigeria", "Zambia", "Somaliland region",
+                                             "Mozambique", "Lesotho","Swaziland", "South Africa",
+                                             "Ghana", "Zimbabwe", "Tunisia", "Morocco", "Algeria",
+                                             "Sudan", "Congo (Kinshasa)", "Liberia", 
+                                             "Ethiopia", "Sierra Leone", "Mauritania", "Kenya", "Djibouti",
+                                             "Botswana", "Malawi", "Cameroon", "Angola",
+                                             "Mali", "Congo (Brazzaville)", "Comoros", "Uganda",
+                                             "Senegal", "Gabon", "Niger", "Tanzania", "Madagascar",
+                                             "Central African Republic", "Chad", "Guinea",
+                                             "Ivory Coast", "Burkina Faso", "Rwanda",
+                                             "Benin", "Burundi", "Togo", "Namibia"))] <- "Africa"
+data15$continent[which(data15$Country %in% c("Australia", "New Zealand"))] <- "Oceania"
+
+data16$continent <- NA
+data16$continent[which(data16$Region %in% c("Eastern Asia", "Southeastern Asia", "Southern Asia"))] <- "Asia"
+data16$continent[which(data16$Region %in% c("Central and Eastern Europe", "Western Europe"))] <- "Europe"
+data16$continent[which(data16$Region == "North America")] <- "North America"
+data16$continent[which(data16$Country %in% c("Canada", "Jamaica", "Honduras", "Trinidad and Tobago",
+                                             "Panama", "El Salvador","Haiti", "Peru",
+                                             "Costa Rica", "Dominican Republic", "Mexico", "United States",
+                                             "Guatemala", "Nicaragua", "Puerto Rico", "Belize"))] <- "North America"
+
+data16$continent[which(data16$Country %in% c("Brazil", "Chile", "Argentina", "Uruguay",
+                                             "Colombia", "Ecuador","Paraguay", "Peru",
+                                             "Bolivia", "Venezuela", "Suriname"))] <- "South America"
+
+data16$continent[which(data16$Country %in% c("United Arab Emirates", "Oman", "Qatar", "Saudi Arabia",
+                                             "Kuwait", "Bahrain","Libya", "Jordan",
+                                             "Lebanon", "Iraq", "Iran", "Yemen", "Syria",
+                                             "Turkey", "Israel", "Egypt", "Palestinian Territories"))] <- "Middle East"
+data16$continent[which(data16$Country %in% c("Mauritius", "Nigeria", "Zambia", "Somaliland region",
+                                             "Mozambique", "Lesotho","Swaziland", "South Africa",
+                                             "Ghana", "Zimbabwe", "Tunisia", "Morocco", "Algeria",
+                                             "Sudan", "Congo (Kinshasa)", "Liberia", 
+                                             "Ethiopia", "Sierra Leone", "Mauritania", "Kenya", "Djibouti",
+                                             "Botswana", "Malawi", "Cameroon", "Angola",
+                                             "Mali", "Congo (Brazzaville)", "Comoros", "Uganda",
+                                             "Senegal", "Gabon", "Niger", "Tanzania", "Madagascar",
+                                             "Central African Republic", "Chad", "Guinea",
+                                             "Ivory Coast", "Burkina Faso", "Rwanda",
+                                             "Benin", "Burundi", "Togo", "Namibia", "Somaliland Region", 
+                                             "South Sudan", "Somalia"))] <- "Africa"
+data16$continent[which(data16$Country %in% c("Australia", "New Zealand"))] <- "Oceania"
+
+```
+
+Firstly, to get a general idea about happiness score, we would use map to visualiz the distribution and transformation of global happiness score. Compared scores between 2014 and 2018, the happiness scores distribution did not change very much. Scandinavian Peninsula, West Europe, North America, and Oceania had the high happiness scores. Afghanistan and African countries had the low scores.
+#### **Happiness Scores** {.tabset .tabset-fade .tabset-pills}
+```{r}
+newdata15 <- data15[,c("Country","Happiness.Score")]
+
+newdata15$Country <- as.character(data15$Country)
+colnames(newdata15)<-c("country","value")
+
+Countryname15 <-c("Congo (Brazzaville)"="Democratic Republic of the Congo","Guinea"="Equatorial Guinea",
+                  "North Cyprus"="Northern Cyprus","Serbia"="Republic of Serbia",
+                  "Congo (Brazzaville)"="Republic of Congo",
+                  "Tanzania"="United Republic of Tanzania","United States Minor Outlying Islands"="United States",
+                  "United States"="United States of America","United States"="United States Virgin Islands")
+
+for(i in names(Countryname15)){
+  newdata15[newdata15$country==i,"country"] <- Countryname15[i]
+}
+
+hc14 <- highchart() %>%
+  hc_add_series_map(worldgeojson, newdata15, value = "value", joinBy = c('name','country'))  %>% 
+  hc_colorAxis(stops = color_stops()) %>% 
+  ####hc_colorAxis(dataClasses = color_classes(c(seq(0, 10, by = 2), 50)))%>%
+  #hc_colorAxis(minColor = "#FFFFFF", maxColor = "#434348")%>%
+  hc_title(text = "Happiness Score") %>% 
+  hc_subtitle(text = "2014") %>%
+  hc_tooltip(borderWidth = 1.5, headerFormat = "", valueSuffix = "value")
+
+newdata16 <- data16[,c("Country","Happiness.Score")]
+newdata16$Country <- as.character(newdata16$Country)
+colnames(newdata16)<-c("country","value")
+Countryname16<-c("Congo (Brazzaville)"="Democratic Republic of the Congo","Guinea"="Equatorial Guinea",
+                 "North Cyprus"="Northern Cyprus","Serbia"="Republic of Serbia",
+                 "Congo (Brazzaville)"="Republic of Congo","Somaliland region"="Somaliland",
+                 "Tanzania"="United Republic of Tanzania","United States Minor Outlying Islands"="United States",
+                 "United States"="United States of America","United States"="United States Virgin Islands",
+                 "Somaliland Region"="Somaliland")
+for(i in names(Countryname16)){
+  newdata16[newdata16$country==i,"country"]<-Countryname16[i]
+}
+
+hc18 <- highchart() %>%
+  hc_add_series_map(worldgeojson, newdata16, value = "value", joinBy = c('name','country'))  %>% 
+  hc_colorAxis(stops = color_stops()) %>% 
+  ####hc_colorAxis(dataClasses = color_classes(c(seq(0, 10, by = 2), 50)))%>%
+  #hc_colorAxis(minColor = "#e6ebf5", maxColor = "#003399")%>%
+  hc_title(text = "Happiness Score") %>% 
+  hc_subtitle(text = "2018") %>%
+  hc_tooltip(borderWidth = 1.5, headerFormat = "", valueSuffix = "value") 
+```
+
+##### 2014
+```{r}
+hc14
+```
+
+
+##### 2018
+```{r}
+hc18
+```
+
+Compared scores between 2014 and 2018, GDP per capita distribution did not change very much. Scandinavian Peninsula, West Europe, North America, middle east, and Oceania had the high value. Afghanistan and some Aferican countries had the low scores. 
+#### **GDP per Capita** {.tabset}
+```{r}
+newdata15 <- data15[,c("Country","Economy")]
+
+newdata15$Country <- as.character(data15$Country)
+colnames(newdata15)<-c("country","value")
+
+Countryname15 <-c("Congo (Brazzaville)"="Democratic Republic of the Congo","Guinea"="Equatorial Guinea",
+                  "North Cyprus"="Northern Cyprus","Serbia"="Republic of Serbia",
+                  "Congo (Brazzaville)"="Republic of Congo",
+                  "Tanzania"="United Republic of Tanzania","United States Minor Outlying Islands"="United States",
+                  "United States"="United States of America","United States"="United States Virgin Islands")
+
+for(i in names(Countryname15)){
+  newdata15[newdata15$country==i,"country"] <- Countryname15[i]
+}
+
+hc14e <- highchart() %>%
+  hc_add_series_map(worldgeojson, newdata15, value = "value", joinBy = c('name','country'))  %>% 
+  #hc_colorAxis(stops = color_stops()) %>% 
+  ####hc_colorAxis(dataClasses = color_classes(c(seq(0, 10, by = 2), 50)))%>%
+  hc_colorAxis(minColor = "red", maxColor = "blue")%>%
+  hc_title(text = "GDP per Capita") %>% 
+  hc_subtitle(text = "2014") %>%
+  hc_tooltip(borderWidth = 1.5, headerFormat = "", valueSuffix = "value")
+
+newdata16 <- data16[,c("Country","Economy")]
+newdata16$Country <- as.character(newdata16$Country)
+colnames(newdata16)<-c("country","value")
+Countryname16<-c("Congo (Brazzaville)"="Democratic Republic of the Congo","Guinea"="Equatorial Guinea",
+                 "North Cyprus"="Northern Cyprus","Serbia"="Republic of Serbia",
+                 "Congo (Brazzaville)"="Republic of Congo","Somaliland region"="Somaliland",
+                 "Tanzania"="United Republic of Tanzania","United States Minor Outlying Islands"="United States",
+                 "United States"="United States of America","United States"="United States Virgin Islands",
+                 "Somaliland Region"="Somaliland")
+for(i in names(Countryname16)){
+  newdata16[newdata16$country==i,"country"]<-Countryname16[i]
+}
+
+hc18e <- highchart() %>%
+  hc_add_series_map(worldgeojson, newdata16, value = "value", joinBy = c('name','country'))  %>% 
+  #hc_colorAxis(stops = color_stops()) %>% 
+  ####hc_colorAxis(dataClasses = color_classes(c(seq(0, 10, by = 2), 50)))%>%
+  hc_colorAxis(minColor = "red", maxColor = "blue")%>%
+  hc_title(text = "GDP per Capita") %>% 
+  hc_subtitle(text = "2018") %>%
+  hc_tooltip(borderWidth = 1.5, headerFormat = "", valueSuffix = "value") 
+```
+
+####2014 
+```{r}
+hc14e
+```
+
+
+####2018
+```{r}
+hc18e
+```
+
+
+
+Most countries had fair social support. South Asian region had the low social support. 
+#### **Social Support** {.tabset .tabset-fade .tabset-pills}
+```{r}
+newdata15 <- data15[,c("Country","Family")]
+
+newdata15$Country <- as.character(data15$Country)
+colnames(newdata15)<-c("country","value")
+
+Countryname15 <-c("Congo (Brazzaville)"="Democratic Republic of the Congo","Guinea"="Equatorial Guinea",
+                  "North Cyprus"="Northern Cyprus","Serbia"="Republic of Serbia",
+                  "Congo (Brazzaville)"="Republic of Congo",
+                  "Tanzania"="United Republic of Tanzania","United States Minor Outlying Islands"="United States",
+                  "United States"="United States of America","United States"="United States Virgin Islands")
+
+for(i in names(Countryname15)){
+  newdata15[newdata15$country==i,"country"] <- Countryname15[i]
+}
+
+hc14family <- highchart() %>%
+  hc_add_series_map(worldgeojson, newdata15, value = "value", joinBy = c('name','country'))  %>% 
+  #hc_colorAxis(stops = color_stops()) %>% 
+  ####hc_colorAxis(dataClasses = color_classes(c(seq(0, 10, by = 2), 50)))%>%
+  hc_colorAxis(minColor = "green", maxColor = "blue")%>%
+  hc_title(text = "Social Support") %>% 
+  hc_subtitle(text = "2014") %>%
+  hc_tooltip(borderWidth = 1.5, headerFormat = "", valueSuffix = "value")
+
+newdata16 <- data16[,c("Country","Family")]
+newdata16$Country <- as.character(newdata16$Country)
+colnames(newdata16)<-c("country","value")
+Countryname16<-c("Congo (Brazzaville)"="Democratic Republic of the Congo","Guinea"="Equatorial Guinea",
+                 "North Cyprus"="Northern Cyprus","Serbia"="Republic of Serbia",
+                 "Congo (Brazzaville)"="Republic of Congo","Somaliland region"="Somaliland",
+                 "Tanzania"="United Republic of Tanzania","United States Minor Outlying Islands"="United States",
+                 "United States"="United States of America","United States"="United States Virgin Islands",
+                 "Somaliland Region"="Somaliland")
+for(i in names(Countryname16)){
+  newdata16[newdata16$country==i,"country"]<-Countryname16[i]
+}
+
+hc18family <- highchart() %>%
+  hc_add_series_map(worldgeojson, newdata16, value = "value", joinBy = c('name','country'))  %>% 
+  #hc_colorAxis(stops = color_stops()) %>% 
+  ####hc_colorAxis(dataClasses = color_classes(c(seq(0, 10, by = 2), 50)))%>%
+  hc_colorAxis(minColor = "green", maxColor = "blue")%>%
+  hc_title(text = "Spcial Support") %>% 
+  hc_subtitle(text = "2018") %>%
+  hc_tooltip(borderWidth = 1.5, headerFormat = "", valueSuffix = "value") 
+```
+
+####2014 
+```{r}
+hc14family
+```
+
+####2018 
+```{r}
+hc18family
+```
+
+Scandinavian region, Canada, Oceania, and East Asian had high life expectancy. Most African countries and Afganistan had the low life expectancy.
+#### **Life Expectancy** {.tabset .tabset-fade .tabset-pills}
+```{r}
+newdata15 <- data15[,c("Country","Life.expectancy")]
+
+newdata15$Country <- as.character(data15$Country)
+colnames(newdata15)<-c("country","value")
+
+Countryname15 <-c("Congo (Brazzaville)"="Democratic Republic of the Congo","Guinea"="Equatorial Guinea",
+                  "North Cyprus"="Northern Cyprus","Serbia"="Republic of Serbia",
+                  "Congo (Brazzaville)"="Republic of Congo",
+                  "Tanzania"="United Republic of Tanzania","United States Minor Outlying Islands"="United States",
+                  "United States"="United States of America","United States"="United States Virgin Islands")
+
+for(i in names(Countryname15)){
+  newdata15[newdata15$country==i,"country"] <- Countryname15[i]
+}
+
+hc14life <- highchart() %>%
+  hc_add_series_map(worldgeojson, newdata15, value = "value", joinBy = c('name','country'))  %>% 
+  #hc_colorAxis(stops = color_stops()) %>% 
+  ####hc_colorAxis(dataClasses = color_classes(c(seq(0, 10, by = 2), 50)))%>%
+  hc_colorAxis(minColor = "yellow", maxColor = "blue")%>%
+  hc_title(text = "Life Expectancy") %>% 
+  hc_subtitle(text = "2014") %>%
+  hc_tooltip(borderWidth = 1.5, headerFormat = "", valueSuffix = "value")
+
+newdata16 <- data16[,c("Country","Life.expectancy")]
+newdata16$Country <- as.character(newdata16$Country)
+colnames(newdata16)<-c("country","value")
+Countryname16<-c("Congo (Brazzaville)"="Democratic Republic of the Congo","Guinea"="Equatorial Guinea",
+                 "North Cyprus"="Northern Cyprus","Serbia"="Republic of Serbia",
+                 "Congo (Brazzaville)"="Republic of Congo","Somaliland region"="Somaliland",
+                 "Tanzania"="United Republic of Tanzania","United States Minor Outlying Islands"="United States",
+                 "United States"="United States of America","United States"="United States Virgin Islands",
+                 "Somaliland Region"="Somaliland")
+for(i in names(Countryname16)){
+  newdata16[newdata16$country==i,"country"]<-Countryname16[i]
+}
+
+hc18life <- highchart() %>%
+  hc_add_series_map(worldgeojson, newdata16, value = "value", joinBy = c('name','country'))  %>% 
+  #hc_colorAxis(stops = color_stops()) %>% 
+  ####hc_colorAxis(dataClasses = color_classes(c(seq(0, 10, by = 2), 50)))%>%
+  hc_colorAxis(minColor = "yellow", maxColor = "blue")%>%
+  hc_title(text = "Life Expectancy") %>% 
+  hc_subtitle(text = "2018") %>%
+  hc_tooltip(borderWidth = 1.5, headerFormat = "", valueSuffix = "value") 
+```
+
+####2014 
+```{r}
+hc14life
+```
+
+
+####2018 
+```{r}
+hc18life
+```
+
+
+Myanmar had the highest value of generosity in 2014 and 2018. North America, UK, and Oceania had the high values. Russia had the lowest value of 0.00199 in 2014 and increased to 0.082 in 2018.
+#### **Generosity** {.tabset .tabset-fade .tabset-pills}
+```{r}
+newdata15 <- data15[,c("Country","Generosity")]
+
+newdata15$Country <- as.character(data15$Country)
+colnames(newdata15)<-c("country","value")
+
+Countryname15 <-c("Congo (Brazzaville)"="Democratic Republic of the Congo","Guinea"="Equatorial Guinea",
+                  "North Cyprus"="Northern Cyprus","Serbia"="Republic of Serbia",
+                  "Congo (Brazzaville)"="Republic of Congo",
+                  "Tanzania"="United Republic of Tanzania","United States Minor Outlying Islands"="United States",
+                  "United States"="United States of America","United States"="United States Virgin Islands")
+
+for(i in names(Countryname15)){
+  newdata15[newdata15$country==i,"country"] <- Countryname15[i]
+}
+
+hc14generosity <- highchart() %>%
+  hc_add_series_map(worldgeojson, newdata15, value = "value", joinBy = c('name','country'))  %>% 
+  #hc_colorAxis(stops = color_stops()) %>% 
+  ####hc_colorAxis(dataClasses = color_classes(c(seq(0, 10, by = 2), 50)))%>%
+  hc_colorAxis(minColor = "pink", maxColor = "blue")%>%
+  hc_title(text = "Generosity") %>% 
+  hc_subtitle(text = "2014") %>%
+  hc_tooltip(borderWidth = 1.5, headerFormat = "", valueSuffix = "value")
+
+newdata16 <- data16[,c("Country","Generosity")]
+newdata16$Country <- as.character(newdata16$Country)
+colnames(newdata16)<-c("country","value")
+Countryname16<-c("Congo (Brazzaville)"="Democratic Republic of the Congo","Guinea"="Equatorial Guinea",
+                 "North Cyprus"="Northern Cyprus","Serbia"="Republic of Serbia",
+                 "Congo (Brazzaville)"="Republic of Congo","Somaliland region"="Somaliland",
+                 "Tanzania"="United Republic of Tanzania","United States Minor Outlying Islands"="United States",
+                 "United States"="United States of America","United States"="United States Virgin Islands",
+                 "Somaliland Region"="Somaliland")
+for(i in names(Countryname16)){
+  newdata16[newdata16$country==i,"country"]<-Countryname16[i]
+}
+
+hc18generosity <- highchart() %>%
+  hc_add_series_map(worldgeojson, newdata16, value = "value", joinBy = c('name','country'))  %>% 
+  #hc_colorAxis(stops = color_stops()) %>% 
+  ####hc_colorAxis(dataClasses = color_classes(c(seq(0, 10, by = 2), 50)))%>%
+  hc_colorAxis(minColor = "pink", maxColor = "blue")%>%
+  hc_title(text = "Generosity") %>% 
+  hc_subtitle(text = "2018") %>%
+  hc_tooltip(borderWidth = 1.5, headerFormat = "", valueSuffix = "value") 
+```
+
+####2014 
+```{r}
+hc14generosity
+```
+
+
+####2018 
+```{r}
+hc18generosity
+```
+
+
+Most countries did not trust their governments except scandinavian region, Oceania, and United States.
+#### **Trust** {.tabset .tabset-fade .tabset-pills}
+```{r}
+newdata15 <- data15[,c("Country","Trust")]
+
+newdata15$Country <- as.character(data15$Country)
+colnames(newdata15)<-c("country","value")
+
+Countryname15 <-c("Congo (Brazzaville)"="Democratic Republic of the Congo","Guinea"="Equatorial Guinea",
+                  "North Cyprus"="Northern Cyprus","Serbia"="Republic of Serbia",
+                  "Congo (Brazzaville)"="Republic of Congo",
+                  "Tanzania"="United Republic of Tanzania","United States Minor Outlying Islands"="United States",
+                  "United States"="United States of America","United States"="United States Virgin Islands")
+
+for(i in names(Countryname15)){
+  newdata15[newdata15$country==i,"country"] <- Countryname15[i]
+}
+
+hc14trust <- highchart() %>%
+  hc_add_series_map(worldgeojson, newdata15, value = "value", joinBy = c('name','country'))  %>% 
+  #hc_colorAxis(stops = color_stops()) %>% 
+  ####hc_colorAxis(dataClasses = color_classes(c(seq(0, 10, by = 2), 50)))%>%
+  hc_colorAxis(minColor = "purple", maxColor = "blue")%>%
+  hc_title(text = "Trust") %>% 
+  hc_subtitle(text = "2014") %>%
+  hc_tooltip(borderWidth = 1.5, headerFormat = "", valueSuffix = "value")
+
+newdata16 <- data16[,c("Country","Trust")]
+newdata16$Country <- as.character(newdata16$Country)
+colnames(newdata16)<-c("country","value")
+Countryname16<-c("Congo (Brazzaville)"="Democratic Republic of the Congo","Guinea"="Equatorial Guinea",
+                 "North Cyprus"="Northern Cyprus","Serbia"="Republic of Serbia",
+                 "Congo (Brazzaville)"="Republic of Congo","Somaliland region"="Somaliland",
+                 "Tanzania"="United Republic of Tanzania","United States Minor Outlying Islands"="United States",
+                 "United States"="United States of America","United States"="United States Virgin Islands",
+                 "Somaliland Region"="Somaliland")
+for(i in names(Countryname16)){
+  newdata16[newdata16$country==i,"country"]<-Countryname16[i]
+}
+
+hc18trust <- highchart() %>%
+  hc_add_series_map(worldgeojson, newdata16, value = "value", joinBy = c('name','country'))  %>% 
+  #hc_colorAxis(stops = color_stops()) %>% 
+  ####hc_colorAxis(dataClasses = color_classes(c(seq(0, 10, by = 2), 50)))%>%
+  hc_colorAxis(minColor = "purple", maxColor = "blue")%>%
+  hc_title(text = "Trust") %>% 
+  hc_subtitle(text = "2018") %>%
+  hc_tooltip(borderWidth = 1.5, headerFormat = "", valueSuffix = "value") 
+```
+
+####2014
+```{r}
+hc14trust
+```
+
+
+####2018
+```{r}
+hc18trust
+```
+
