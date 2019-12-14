@@ -1,0 +1,95 @@
+---
+title: "World Happiness Report-Fourth Session of Results-Happiness Correlation Matrix"
+date: "December 01 2019"
+output: 
+  html_document:
+    code_folding: hide
+---
+
+```{r config, include=FALSE}
+knitr::opts_chunk$set(message=FALSE, warning=FALSE, comment=NA, echo=T)
+```
+
+Loading libraries
+```{r}
+library(plyr)
+library(dplyr)
+library(tidyverse)
+library(lubridate)
+library(caTools)
+library(ggplot2)
+library(ggthemes)
+library(reshape2)
+library(data.table)
+library(tidyr)
+library(corrgram)       
+library(corrplot)
+library(formattable)
+library(cowplot)
+library(ggpubr)
+library(plot3D)
+```
+
+loading data
+```{r}
+Happiness<-read.csv("5years.csv",header=T)
+```
+
+After the extensive study, we cannot help thinking about a question so within these six factors, which may have significant impacts on happiness score and if these factors impact any countries in the same way. Thus, correlation matrix is introduced to formulate this relationship.And this matrix is applied to each continent to find if the impacts vary arcoss these continents.Thus, governments may be advised to focus on these significant factors to improve the life there.
+*Generating Correlation Matrix*
+We can see that Economy (GDP per capita), Family (SOcial Support), and Life Expectancy have the highest correlations with the Happiness Scores. Generosity has the lowest correlation with the Happiness Scores.
+```{r}
+# Create a correlation plot
+Num.cols <- sapply(Happiness, is.numeric)
+newdatacor = cor(Happiness[c(5:11)])
+corrplot(newdatacor, method = "number", title="Happiness Scores Matrix", mar=c(0,0,1,0))
+```
+
+For African countries, all these variables seem to not have strong correlations with Happiness Scores for Asian countries. The highest correlation value is between Economy and Happiness.
+```{r}
+Happy.Africa<-filter(Happiness,Continent=="Africa")
+Happy.Africa1<-cor(Happy.Africa[c(5:11)])
+corrplot(Happy.Africa1, method = "number", title="Happiness Scores Matrix of Africa", mar=c(0,0,1,0))
+#corrgram(Happiness%>%filter(Continent == "Africa")%>%select(-5), order=TRUE,
+        # upper.panel=panel.cor, main="Happiness Matrix for Africa")
+```
+
+Only Economy has a strong correlation with the score. All other factors have relative weak correlations.
+```{r}
+Happy.Asia<-filter(Happiness,Continent=="Asia")
+Happy.Asia1<-cor(Happy.Asia[c(5:11)])
+corrplot(Happy.Asia1, method = "number", title="Happiness Scores Matrix of Asia", mar=c(0,0,1,0))
+```
+
+For Eropean countries, the highest correlation is Economy with the value of 0.76. The second one is Trust with the value of 0.57. The following highest two factors are Generosity and Freedom. The weakest one comes from Family.
+```{r}
+Happy.Europe<-filter(Happiness,Continent=="Europe")
+Happy.Europe1<-cor(Happy.Europe[c(5:11)])
+corrplot(Happy.Europe1, method = "number", title="Happiness Scores Matrix of Europe", mar=c(0,0,1,0))
+```
+
+Economy, Life Expectancy and Freedom has relative higher correlations of North America with the values of 0.77, 0.66 and 0.61. However, generosity has an inverse correlation with the value of -0.29.
+```{r}
+Happy.NAmerica<-filter(Happiness,Continent=="North America")
+Happy.NAmerica1<-cor(Happy.NAmerica[c(5:11)])
+corrplot(Happy.NAmerica1, method = "number", title="Happiness Scores Matrix of North America", mar=c(0,0,1,0))
+```
+
+In South America, all have relative weaker correlations.The highest one is Economy and the lowest one is Family. Freedom is an inverse relationship.
+```{r}
+Happy.SAmerica<-filter(Happiness,Continent=="South America")
+Happy.SAmerica1<-cor(Happy.SAmerica[c(5:11)])
+corrplot(Happy.SAmerica1, method = "number", title="Happiness Scores Matrix of South America", mar=c(0,0,1,0))
+```
+
+To suprise, Oceania has the highest correlation among all these continets. Economy, Family, Life Expectancy, and Freedom are 0.99, 0.9, 0.91, and 0.93. Generosity is 0.76 and Trust is 0.84. 
+```{r}
+Happy.Oceania<-filter(Happiness,Continent=="Oceania")
+Happy.Oceania1<-cor(Happy.Oceania[c(5:11)])
+corrplot(Happy.Oceania1, method = "number", title="Happiness Scores Matrix of Oceania", mar=c(0,0,1,0))
+```
+
+
+
+
+
