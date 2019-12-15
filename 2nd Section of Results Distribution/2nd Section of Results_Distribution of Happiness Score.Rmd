@@ -1,0 +1,168 @@
+---
+title: "World Happiness Report-Second Session of Results-Distribution of Happiness Score"
+date: "December 01 2019"
+output: 
+  html_document:
+    code_folding: hide
+---
+
+```{r config, include=FALSE}
+knitr::opts_chunk$set(message=FALSE, warning=FALSE, comment=NA, echo=T)
+```
+
+Loading libraries
+```{r}
+library(dslabs)
+library(plyr)
+library(dplyr)
+library(tidyverse)
+library(lubridate)
+library(caTools)
+library(ggplot2)
+library(ggthemes)
+library(reshape2)
+library(data.table)
+library(tidyr)
+library(corrgram)       
+library(corrplot)
+library(formattable)
+library(cowplot)
+library(ggpubr)
+library(plot3D)
+```
+
+Loading data
+```{r}
+data2017<-read.csv("5years.csv",header=T)
+```
+
+First, we would compare all the average values of these happiness factors for these continents based on five years. It can be found that over the five years, African has the lowest happiness score, and Asia has the second lowest value. All the other four have the close values. For Economy, Europe has the highest average value and Africa has the lowest one. For Social support, Europe has the highest one and Africa has the lowest one. Africa has only half of the values of life expectancy of other continents. North America and Oceania have the higher value of Freedom. Asia and Oceania have the higher generosity than other continents. Oceania has the highest average value of trust to their governments. However, these average value does not consider the weights thus it could not be that accurate. But we still can have a general idea about which continents have more happiness than other ones.
+```{r}
+Happiness <- data2017%>%
+                          select(-4) %>%
+                          group_by(Continent) %>%
+                          summarise_at(vars(-Country), funs(mean(., na.rm=TRUE)))
+
+Happiness<-Happiness%>%select(1,3:9)
+
+# Melting the "Happiness.Continent" dataset
+Happiness.melt <- melt(Happiness)
+
+
+# Faceting
+
+ggplot(Happiness.melt, aes(y=value, x=Continent, color=Continent, fill=Continent)) + 
+  geom_bar( stat="identity") +    
+  facet_wrap(~variable) + theme_bw() +
+  theme(axis.text.x = element_text(angle = 90, hjust = 1)) +
+  labs(title = "Average value of happiness factors for different continents", 
+       y = "Average value") 
+
+```
+
+
+The following analysis focused on the distributions of these happiness factors with all the countries. Data visualization of each variable is conducted in 2014 and 2018. I picked the countries with the highest values of each variable. In addition, United States, China, India and Singapore were selected for specific comparisons. The fist figure is the comparison of GDP per capita in 2014 and 2018. We can see that most European countries accumulate in the upper right corner, which means that the GDP per capita in these countries are higher. The country with the highest GDP per capita is Qatar in 2014 and 2018. Singapore is in the top5. Both China and India with the largest population in the world had increased, especially China. However, the Happiness score of Singapore and India had decreased.
+```{r}
+#Figure Economy
+library(gridExtra)
+library(ggrepel)
+library(tidyverse)
+highlight <- c("Qatar","Singapore","United States","China", "India")
+
+years=c(2014,2018)
+
+data2017%>% filter(Year%in%years)%>%ggplot(aes(x = Economy, y = HScore, label = Country)) +  
+  geom_point(aes(color=Continent), size = 3) +
+  xlab("GDP per Capita") + 
+  ylab("Happiness Score") +
+  ggtitle("World Happiness Score vs GDP per capita") +
+  scale_color_discrete(name = "Continent") +
+  geom_text_repel(size = 4, show.legend = FALSE, data = filter(data2017,Year%in%years, Country%in%highlight))+
+  geom_point(data=filter(data2017,Year%in%years,Country%in%highlight),color="red")+
+facet_grid( . ~ Year)
+```
+
+Social support is compared for each country. Iceland is the highest score of social support in both two years. The social support of Singapore increased but the Happiness score decreased. Both China and Indian had increased as well.
+```{r}
+#Figure Social Support
+highlight <- c("Iceland","Singapore","United States","China", "India")
+
+data2017 %>% filter(Year%in%years)%>%ggplot(aes(x = Family, y = HScore, label = Country)) +  
+  geom_point(aes(color=Continent), size = 3) +
+  xlab("Social Support") + 
+  ylab("Happiness Score") +
+  ggtitle("World Happiness Score vs Social Support") +
+  scale_color_discrete(name = "Continent") +
+  geom_text_repel(size = 4, show.legend = FALSE, data = filter(data2017,Year%in%years, Country%in%highlight))+
+  geom_point(data=filter(data2017, Year%in%years,Country%in%highlight),color="red")+
+facet_grid( . ~ Year)
+
+```
+
+We can see that life expectancy had been increasing from 2014 to 2018 from most countries. Singapore had the highest life expectancy in the world.
+```{r}
+#Figure Life Expectancy
+highlight <- c("Singapore","United States","China", "India")
+
+data2017 %>% filter(Year%in%years)%>%ggplot(aes(x = Life.expectancy, y = HScore, label = Country)) +  
+  geom_point(aes(color=Continent), size = 3) +
+  xlab("Life Expectancy") + 
+  ylab("Happiness Score") +
+  ggtitle("World Happiness Score vs Life Expectancy") +
+  scale_color_discrete(name = "Continent") +
+  geom_text_repel(size = 4, show.legend = FALSE, data = filter(data2017, Year%in%years,Country%in%highlight))+
+  geom_point(data=filter(data2017, Year%in%years,Country%in%highlight),color="red")+
+facet_grid( . ~ Year)
+```
+
+Norway and Uzbekistan had the highest freedom in 2014 and 2018, respectively. We can find that the freedom of the United States decreased a bit. India increased a bit. 
+```{r}
+#Figure Freedom
+highlight <- c("Uzbekistan","Norway", "Singapore","United States","China", "India")
+
+data2017 %>% filter(Year%in%years)%>%ggplot(aes(x = Freedom, y = HScore, label = Country)) +  
+  geom_point(aes(color=Continent), size = 3) +
+  xlab("Freedom") + 
+  ylab("Happiness Score") +
+  ggtitle("World Happiness Score vs Freedom") +
+  scale_color_discrete(name = "Continent") +
+  geom_text_repel(size = 4, show.legend = FALSE, data = filter(data2017, Year%in%years,Country%in%highlight))+
+  geom_point(data=filter(data2017, Year%in%years,Country%in%highlight),color="red")+
+facet_grid( . ~ Year)
+
+```
+
+Myanmar had the highest generosity, which might result from religion. The generosity of most countries shrinked from 2014 to 2018. 
+```{r}
+#Figure Generosity
+highlight <- c("Myanmar", "Singapore","United States","China", "India")
+
+data2017 %>%filter(Year%in%years)%>%ggplot(aes(x = Generosity, y = HScore, label = Country)) +  
+  geom_point(aes(color=Continent), size = 3) +
+  xlab("Generosity") + 
+  ylab("Happiness Score") +
+  ggtitle("World Happiness Score vs Generosity") +
+  scale_color_discrete(name = "Continent") +
+  geom_text_repel(size = 4, show.legend = FALSE, data = filter(data2017, Year%in%years,Country%in%highlight))+
+  geom_point(data=filter(data2017, Year%in%years,Country%in%highlight),color="red")+
+facet_grid( . ~ Year)
+```
+
+It is interesting that many European countries had the low trust in their government. Singapore was the highest trust in 2018 and Rwanda was the highest trust in 2014. And trust in many Asian countries decreased from 2014 to 2018 as well. 
+```{r}
+#Figure Trust
+highlight <- c("Rwanda","Singapore","United States","China", "India")
+
+data2017 %>% filter(Year%in%years)%>%ggplot(aes(x = Trust, y = HScore, label = Country)) +  
+  geom_point(aes(color=Continent), size = 3) +
+  xlab("Trust") + 
+  ylab("Happiness Score") +
+  ggtitle("World Happiness Score vs Trust") +
+  scale_color_discrete(name = "Continent") +
+  geom_text_repel(size = 4, show.legend = FALSE, data = filter(data2017, Year%in%years,Country%in%highlight))+
+  geom_point(data=filter(data2017, Year%in%years,Country%in%highlight),color="red")+
+facet_grid( . ~ Year)
+```
+
+
+However, these analyses only focused on the point plots that could not provide more details about transformation about these happiness factors. The next session *Transformation of Happiness Factors*, more numbers of these transformation over years will be listed and discussed.
